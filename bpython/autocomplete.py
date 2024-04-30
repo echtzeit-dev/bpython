@@ -72,111 +72,99 @@ class AutocompleteModes(Enum):
         return None
 
 
-MAGIC_METHODS = tuple(
-    f"__{s}__"
-    for s in (
-        "new",
-        "init",
-        "del",
-        "repr",
-        "str",
-        "bytes",
-        "format",
-        "lt",
-        "le",
-        "eq",
-        "ne",
-        "gt",
-        "ge",
-        "hash",
-        "bool",
-        "getattr",
-        "getattribute",
-        "setattr",
-        "delattr",
-        "dir",
-        "get",
-        "set",
-        "delete",
-        "set_name",
-        "init_subclass",
-        "instancecheck",
-        "subclasscheck",
-        "class_getitem",
-        "call",
-        "len",
-        "length_hint",
-        "getitem",
-        "setitem",
-        "delitem",
-        "missing",
-        "iter",
-        "reversed",
-        "contains",
-        "add",
-        "sub",
-        "mul",
-        "matmul",
-        "truediv",
-        "floordiv",
-        "mod",
-        "divmod",
-        "pow",
-        "lshift",
-        "rshift",
-        "and",
-        "xor",
-        "or",
-        "radd",
-        "rsub",
-        "rmul",
-        "rmatmul",
-        "rtruediv",
-        "rfloordiv",
-        "rmod",
-        "rdivmod",
-        "rpow",
-        "rlshift",
-        "rrshift",
-        "rand",
-        "rxor",
-        "ror",
-        "iadd",
-        "isub",
-        "imul",
-        "imatmul",
-        "itruediv",
-        "ifloordiv",
-        "imod",
-        "ipow",
-        "ilshift",
-        "irshift",
-        "iand",
-        "ixor",
-        "ixor",
-        "neg",
-        "pos",
-        "abs",
-        "invert",
-        "complex",
-        "int",
-        "float",
-        "index",
-        "round",
-        "trunc",
-        "floor",
-        "ceil",
-        "enter",
-        "exit",
-        "await",
-        "aiter",
-        "anext",
-        "aenter",
-        "aexit",
-    )
-)
+MAGIC_METHODS = [
+    "strlen",
+    "%lib",
+    "%undo",
+    "%quit",
+]
 
-KEYWORDS = frozenset(keyword.kwlist)
+KEYWORDS = [
+    "alignas",
+    "alignof",
+    "and",
+    "and_eq",
+    "asm",
+    "auto",
+    "bitand",
+    "bitor",
+    "bool",
+    "break",
+    "case",
+    "catch",
+    "char",
+    "char16_t",
+    "char32_t",
+    "class",
+    "compl",
+    "const",
+    "constexpr",
+    "const_cast",
+    "continue",
+    "decltype",
+    "default",
+    "delete",
+    "do",
+    "double",
+    "dynamic_cast",
+    "else",
+    "enum",
+    "explicit",
+    "export",
+    "extern",
+    "false",
+    "float",
+    "for",
+    "friend",
+    "goto",
+    "if",
+    "inline",
+    "int",
+    "long",
+    "mutable",
+    "namespace",
+    "new",
+    "noexcept",
+    "not",
+    "not_eq",
+    "nullptr",
+    "operator",
+    "or",
+    "or_eq",
+    "private",
+    "protected",
+    "public",
+    "register",
+    "reinterpret_cast",
+    "return",
+    "short",
+    "signed",
+    "sizeof",
+    "static",
+    "static_assert",
+    "static_cast",
+    "struct",
+    "switch",
+    "template",
+    "this",
+    "thread_local",
+    "throw",
+    "true",
+    "try",
+    "typedef",
+    "typeid",
+    "typename",
+    "union",
+    "unsigned",
+    "using",
+    "virtual",
+    "void",
+    "volatile",
+    "wchar_t",
+    "while",
+    "xor",
+    "xor_eq",
+]
 
 
 def _after_last_dot(name: str) -> str:
@@ -527,12 +515,17 @@ class MagicMethodCompletion(BaseCompletionType):
         r = self.locate(cursor_offset, line)
         if r is None:
             return None
-        if "class" not in current_block:
-            return None
-        return {name for name in MAGIC_METHODS if name.startswith(r.word)}
+        #if "class" not in current_block:
+        #    return None
+        matches = {name for name in MAGIC_METHODS if name.startswith(r.word)}
+        return matches if matches else None
 
     def locate(self, cursor_offset: int, line: str) -> Optional[LinePart]:
-        return lineparts.current_method_definition_name(cursor_offset, line)
+        # Has issues with the leading '%'
+        # return lineparts.current_single_word(cursor_offset, line)
+        i = max(0, line.rfind(' '))
+        s = line[i:]
+        return LinePart(i, len(s) - i, s)
 
 
 class GlobalCompletion(BaseCompletionType):
@@ -548,27 +541,14 @@ class GlobalCompletion(BaseCompletionType):
         Return a list of all keywords, built-in functions and names currently
         defined in self.namespace that match.
         """
-        if locals_ is None:
-            return None
+        #if locals_ is None:
+        #    return None
 
         r = self.locate(cursor_offset, line)
         if r is None:
             return None
 
-        n = len(r.word)
-        matches = {
-            word for word in KEYWORDS if self.method_match(word, n, r.word)
-        }
-        for nspace in (builtins.__dict__, locals_):
-            for word, val in nspace.items():
-                # if identifier isn't ascii, don't complete (syntax error)
-                if word is None:
-                    continue
-                if (
-                    self.method_match(word, n, r.word)
-                    and word != "__builtins__"
-                ):
-                    matches.add(_callable_postfix(val, word))
+        matches = {name for name in KEYWORDS if name.startswith(r.word)}
         return matches if matches else None
 
     def locate(self, cursor_offset: int, line: str) -> Optional[LinePart]:
@@ -788,19 +768,20 @@ def get_default_completer(
     return (
         (
             DictKeyCompletion(mode=mode),
-            ImportCompletion(module_gatherer, mode=mode),
-            FilenameCompletion(mode=mode),
+            #ImportCompletion(module_gatherer, mode=mode),
+            #FilenameCompletion(mode=mode),
             MagicMethodCompletion(mode=mode),
-            MultilineJediCompletion(mode=mode),
-            CumulativeCompleter(
-                (
-                    GlobalCompletion(mode=mode),
-                    ParameterNameCompletion(mode=mode),
-                ),
-                mode=mode,
-            ),
-            AttrCompletion(mode=mode),
-            ExpressionAttributeCompletion(mode=mode),
+            GlobalCompletion(mode=mode),
+            #MultilineJediCompletion(mode=mode),
+            #CumulativeCompleter(
+            #    (
+            #        GlobalCompletion(mode=mode),
+            #        ParameterNameCompletion(mode=mode),
+            #    ),
+            #    mode=mode,
+            #),
+            #AttrCompletion(mode=mode),
+            #ExpressionAttributeCompletion(mode=mode),
         )
         if mode != AutocompleteModes.NONE
         else tuple()

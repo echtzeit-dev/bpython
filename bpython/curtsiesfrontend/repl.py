@@ -363,7 +363,7 @@ class BaseRepl(Repl):
         if banner is None:
             if config.help_key:
                 banner = (
-                    _("Welcome to bpython!")
+                    _("Welcome to ez-clang!")
                     + " "
                     + _("Press <%s> for help.") % config.help_key
                 )

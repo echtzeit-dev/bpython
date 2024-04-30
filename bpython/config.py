@@ -70,12 +70,13 @@ def supports_box_chars() -> bool:
 
 def get_config_home() -> Path:
     """Returns the base directory for bpython's configuration files."""
-    return Path(BaseDirectory.xdg_config_home) / "bpython"
+    #return Path(BaseDirectory.xdg_config_home) / "bpython"
+    return Path(os.path.expanduser('~')) / ".ez_clang"
 
 
 def default_config_path() -> Path:
     """Returns bpython's default configuration file path."""
-    return get_config_home() / "config"
+    return get_config_home() / "bpython"
 
 
 def default_editor() -> str:
@@ -208,6 +209,14 @@ class Config:
 
     def __init__(self, config_path: Path) -> None:
         """Loads .ini configuration file and stores its values."""
+
+        # TODO: Add a debug flag?
+        if True:
+            import debugpy
+            debugpy.listen(('0.0.0.0', 5678))
+            print("Waiting for debugpy. Attach to 0.0.0.0:5678 to proceed.")
+            debugpy.wait_for_client()
+            debugpy.breakpoint()
 
         config = ConfigParser()
         fill_config_with_default_values(config, self.defaults)

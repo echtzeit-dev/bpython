@@ -54,7 +54,7 @@ from typing import (
     cast,
 )
 
-from pygments.lexers import Python3Lexer
+from pygments.lexers import CppLexer # Python3Lexer
 from pygments.token import Token, _TokenType
 
 have_pyperclip = True
@@ -150,7 +150,9 @@ class Interpreter(code.InteractiveInterpreter):
         if filename is None:
             filename = filename_for_console_input(source)
         with self.timer:
-            return super().runsource(source, filename, symbol)
+            #return super().runsource(source, filename, symbol)
+            sys.stdout.write('3\n')
+            return True
 
     def showsyntaxerror(self, filename: Optional[str] = None) -> None:
         """Override the regular handler, the code's copied and pasted from
@@ -601,7 +603,7 @@ class Repl(metaclass=abc.ABCMeta):
         # if keyword is not None, we've encountered a keyword and so we're done counting
         stack = [_FuncExpr("", "", 0, "")]
         try:
-            for token, value in Python3Lexer().get_tokens(line):
+            for token, value in CppLexer().get_tokens(line):
                 if token is Token.Punctuation:
                     if value in "([{":
                         stack.append(_FuncExpr("", "", 0, value))
@@ -1104,7 +1106,7 @@ class Repl(metaclass=abc.ABCMeta):
         if self.cpos:
             cursor += 1
         stack: List[Any] = list()
-        all_tokens = list(Python3Lexer().get_tokens(source))
+        all_tokens = list(CppLexer().get_tokens(source))
         # Unfortunately, Pygments adds a trailing newline and strings with
         # no size, so strip them
         while not all_tokens[-1][1]:

@@ -55,12 +55,10 @@ class RaisingArgumentParser(argparse.ArgumentParser):
         raise ArgumentParserFailed()
 
 
-def version_banner(base: str = "bpython") -> str:
-    return _("{} version {} on top of Python {} {}").format(
+def version_banner(base: str = "ez-clang") -> str:
+    return _("{} version {}").format(
         base,
-        __version__,
-        sys.version.split()[0],
-        sys.executable,
+        "0.0.7",
     )
 
 
