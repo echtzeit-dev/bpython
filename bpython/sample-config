@@ -94,8 +94,7 @@
 
 [curtsies]
 
-# Allow the the completion and docstring box above the current line
-# (default: False)
+# Allow the completion and docstring box above the current line (default: False)
 # list_above = False
 
 # Enables two fish (the shell) style features:
